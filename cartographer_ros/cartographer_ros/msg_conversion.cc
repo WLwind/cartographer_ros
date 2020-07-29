@@ -40,6 +40,7 @@
 #include "sensor_msgs/PointCloud2.h"
 
 namespace cartographer_ros {
+bool anticlockwise=true;
 namespace {
 
 // The ros::sensor_msgs::PointCloud2 binary data contains 4 floats for each
@@ -109,8 +110,8 @@ LaserScanToPointCloudWithIntensities(const LaserMessageType& msg) {
     CHECK_GT(msg.angle_min, msg.angle_max);
   }
   PointCloudWithIntensities point_cloud;
-  float angle = msg.angle_min;
-  for (size_t i = 0; i < msg.ranges.size(); ++i) {
+  float angle = anticlockwise?msg.angle_min:msg.angle_max;
+  for (int i = anticlockwise?0:msg.ranges.size()-1; anticlockwise?i<msg.ranges.size():i>=0; anticlockwise?++i:--i) {
     const auto& echoes = msg.ranges[i];
     if (HasEcho(echoes)) {
       const float first_echo = GetFirstEcho(echoes);
@@ -118,7 +119,7 @@ LaserScanToPointCloudWithIntensities(const LaserMessageType& msg) {
         const Eigen::AngleAxisf rotation(angle, Eigen::Vector3f::UnitZ());
         Eigen::Vector4f point;
         point << rotation * (first_echo * Eigen::Vector3f::UnitX()),
-            i * msg.time_increment;
+            anticlockwise?i*msg.time_increment:(msg.ranges.size()-1-i)*msg.time_increment;
         point_cloud.points.push_back(point);
         if (msg.intensities.size() > 0) {
           CHECK_EQ(msg.intensities.size(), msg.ranges.size());
@@ -130,7 +131,10 @@ LaserScanToPointCloudWithIntensities(const LaserMessageType& msg) {
         }
       }
     }
-    angle += msg.angle_increment;
+    if(anticlockwise)
+      angle += msg.angle_increment;
+    else
+      angle -= msg.angle_increment;
   }
   ::cartographer::common::Time timestamp = FromRos(msg.header.stamp);
   if (!point_cloud.points.empty()) {
@@ -310,7 +314,6 @@ std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
   const int width = cairo_image_surface_get_width(painted_slices.surface.get());
   const int height =
       cairo_image_surface_get_height(painted_slices.surface.get());
-  const ros::Time now = ros::Time::now();
 
   occupancy_grid->header.stamp = time;
   occupancy_grid->header.frame_id = frame_id;

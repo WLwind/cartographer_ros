@@ -18,6 +18,7 @@
 #include "cartographer_ros/node.h"
 #include "cartographer_ros/node_options.h"
 #include "cartographer_ros/ros_log_sink.h"
+#include "cartographer_ros/msg_conversion.h"
 #include "gflags/gflags.h"
 #include "tf2_ros/transform_listener.h"
 
@@ -89,6 +90,9 @@ int main(int argc, char** argv) {
   ::ros::init(argc, argv, "cartographer_node");
   ::ros::start();
 
+  ros::NodeHandle nh("~");
+  nh.param("anticlockwise",cartographer_ros::anticlockwise,true);
+  std::cout<<"anticlockwise set to "<<cartographer_ros::anticlockwise<<std::endl;
   cartographer_ros::ScopedRosLogSink ros_log_sink;
   cartographer_ros::Run();
   ::ros::shutdown();

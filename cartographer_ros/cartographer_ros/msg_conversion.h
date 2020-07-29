@@ -37,7 +37,7 @@
 #include "sensor_msgs/PointCloud2.h"
 
 namespace cartographer_ros {
-
+extern bool anticlockwise;
 sensor_msgs::PointCloud2 ToPointCloud2Message(
     int64_t timestamp, const std::string& frame_id,
     const ::cartographer::sensor::TimedPointCloud& point_cloud);
